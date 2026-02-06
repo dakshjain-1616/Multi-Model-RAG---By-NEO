@@ -1,0 +1,1 @@
+Database management systems store and retrieve data efficiently. Relational databases use SQL for querying, while NoSQL databases offer flexible schema designs.

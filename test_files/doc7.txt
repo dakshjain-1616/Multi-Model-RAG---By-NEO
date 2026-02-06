@@ -1,0 +1,1 @@
+DevOps practices combine software development and IT operations. Continuous integration and continuous deployment (CI/CD) pipelines automate software delivery.

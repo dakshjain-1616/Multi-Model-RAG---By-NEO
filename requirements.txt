@@ -1,0 +1,14 @@
+torch
+transformers
+chromadb
+sentence-transformers
+PyPDF2
+python-docx
+pytesseract
+Pillow
+pandas
+openpyxl
+PyYAML
+streamlit
+reportlab
+numpy

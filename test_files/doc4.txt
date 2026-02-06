@@ -1,0 +1,1 @@
+Cloud computing enables on-demand access to computing resources. Infrastructure as a Service (IaaS), Platform as a Service (PaaS), and Software as a Service (SaaS) are common cloud service models.

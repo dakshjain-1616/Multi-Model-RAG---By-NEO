@@ -1,0 +1,1 @@
+Data analysis involves extracting insights from structured and unstructured data. Visualization tools help present findings effectively.

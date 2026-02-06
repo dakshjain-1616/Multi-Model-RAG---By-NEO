@@ -1,0 +1,1 @@
+Multimodal RAG systems combine text, images, and tables for comprehensive information retrieval. These systems use vector embeddings to enable semantic search across different data modalities.
