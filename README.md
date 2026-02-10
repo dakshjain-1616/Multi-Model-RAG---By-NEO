@@ -1,6 +1,18 @@
-# Multimodal RAG System
+# Multimodal RAG System by NEO
 
-A production-ready Retrieval-Augmented Generation (RAG) system supporting text, images, and tables with unified cross-modal search.
+## 🎯 How NEO Tackled the Problem
+
+Building a production RAG system that handles text, images, and tables presents unique technical challenges:
+
+- **Cross-Modal Search Complexity**: Traditional RAG systems handle only text. NEO implemented CLIP-based unified embeddings, enabling queries like "Q1 sales chart" to retrieve both textual reports AND relevant graphs in the same embedding space.
+
+- **Heterogeneous Data Processing**: Each modality requires different handling (OCR for images, parsing for tables, chunking for documents). NEO designed a modular ingestion pipeline that automatically detects file types and applies appropriate processing without manual configuration.
+
+- **Embedding Space Alignment**: Combining text, image, and table embeddings in one vector store requires careful normalization. NEO used CLIP's pre-aligned text/vision encoders with L2 normalization, achieving 60%+ cross-modal retrieval accuracy.
+
+- **Performance vs. Accuracy Trade-off**: Large embedding models slow retrieval. NEO selected CLIP ViT-B/32 (512-dim), balancing quality with <0.03s average latency while maintaining production-grade accuracy.
+
+- **Production Usability**: Research systems lack user-friendly interfaces. NEO built both a CLI for batch processing and a Streamlit web UI with drag-and-drop upload, real-time processing, and rich visualization (inline images, interactive tables).
 
 ## Features
 
@@ -10,322 +22,166 @@ A production-ready Retrieval-Augmented Generation (RAG) system supporting text, 
 - **Interactive UI**: Streamlit-based chat interface with file upload
 - **Production Ready**: Error handling, logging, and performance monitoring
 
-## System Architecture
-
-```
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Multimodal RAG Pipeline                   │
-├─────────────────────────────────────────────────────────────┤
-│  Input Layer                                                │
-│    ├─ Documents (PDF, DOCX, TXT)                           │
-│    ├─ Images (PNG, JPG, TIFF)                              │
-│    └─ Tables (CSV, XLSX, JSON)                             │
-├─────────────────────────────────────────────────────────────┤
-│  Processing Layer (src/ingest.py)                           │
-│    ├─ Text Chunking (512 chars, 50 overlap)                │
-│    ├─ Image OCR (Tesseract)                                │
-│    └─ Table Serialization (with statistics)                │
-├─────────────────────────────────────────────────────────────┤
-│  Embedding Layer (src/index.py)                             │
-│    ├─ CLIP Text Encoder (512-dim vectors)                  │
-│    ├─ CLIP Vision Encoder (512-dim vectors)                │
-│    └─ Table Text Encoder (512-dim vectors)                 │
-├─────────────────────────────────────────────────────────────┤
-│  Storage Layer                                              │
-│    └─ ChromaDB (Persistent, Disk-based)                    │
-├─────────────────────────────────────────────────────────────┤
-│  Retrieval Layer (src/retrieve.py)                          │
-│    ├─ Query Embedding Generation                           │
-│    ├─ Similarity Search (cosine distance)                  │
-│    └─ Cross-Modal Result Ranking                           │
-├─────────────────────────────────────────────────────────────┤
-│  Interface Layer (app.py)                                   │
-│    ├─ Streamlit Chat UI                                    │
-│    ├─ File Upload & Processing                             │
-│    └─ Result Visualization                                 │
-└─────────────────────────────────────────────────────────────┘
-```
-```
-
-## Installation
-
-### Prerequisites
-- Python 3.12+
-- Tesseract OCR (`apt-get install tesseract-ocr` or `brew install tesseract`)
-
-### Setup
-
+## Quick Start
 ```bash
+# Setup
 cd /root/claude_tests/MultiModelRag
-
 python3 -m venv venv
 source venv/bin/activate
-
 pip install -r requirements.txt
-```
 
-## Usage
+# Web Interface
+./venv/bin/python -m streamlit run app.py --server.port 8501
 
-### 1. Command Line Interface
-
-#### Process and Index Files
-```bash
+# CLI Usage
 ./venv/bin/python -c "
 from src.ingest import MultimodalIngestion
 from src.index import MultimodalIndexer
+from src.retrieve import MultimodalRetriever
 
 ingestion = MultimodalIngestion()
 chunks = ingestion.process_directory('./data')
 
-indexer = MultimodalIndexer(model_name='openai/clip-vit-base-patch32', db_path='./chroma_db')
-result = indexer.index_chunks(chunks)
-print(f'Indexed {result[\"indexed\"]} chunks')
+indexer = MultimodalIndexer(model_name='openai/clip-vit-base-patch32')
+indexer.index_chunks(chunks)
+
+retriever = MultimodalRetriever(model_name='openai/clip-vit-base-patch32')
+results = retriever.retrieve('sales data Q1', top_k=5)
 "
 ```
 
-#### Search
-```bash
-./venv/bin/python -c "
-from src.retrieve import MultimodalRetriever
-
-retriever = MultimodalRetriever(model_name='openai/clip-vit-base-patch32', db_path='./chroma_db')
-response = retriever.retrieve('sales data Q1', top_k=5)
-
-for r in response['results']:
-    print(f'{r[\"modality\"]}: {r[\"metadata\"][\"source\"]} (score: {r[\"similarity_score\"]:.3f})')
-"
-```
-
-### 2. Web Interface
-
-```bash
-./venv/bin/python -m streamlit run app.py --server.port 8501
-```
-
-Navigate to `http://localhost:8501`
-
-**Features:**
-- Chat-based search interface
-- Drag-and-drop file upload
-- Real-time processing status
-- Rich result visualization (images inline, tables as dataframes)
-- Modality filtering
-
-### 3. Performance Report Generation
-
-```bash
-./venv/bin/python generate_performance_report.py
-```
-
-Generates:
-- `Pipeline_Performance_Report.pdf` - Detailed performance metrics
-- `performance_report.json` - Machine-readable metrics
-
-## Configuration
-
-Edit `config.yaml`:
-
-```yaml
-embedding_model: "openai/clip-vit-base-patch32"
-text_chunk_size: 512
-text_chunk_overlap: 50
-vector_db_path: "./chroma_db"
-batch_size: 32
-top_k_results: 5
-similarity_threshold: 0.5
-supported_formats:
-  documents: ["pdf", "docx", "txt"]
-  images: ["png", "jpg", "jpeg", "tiff", "bmp"]
-  tables: ["csv", "xlsx", "json"]
-```
-
-## Project Structure
-
-```
-```
-MultiModelRag/
-├── src/
-│   ├── __init__.py
-│   ├── ingest.py          # File processing and chunking
-│   ├── index.py           # Embedding generation and indexing
-│   └── retrieve.py        # Query processing and retrieval
-├── data/                  # Upload directory for user files
-├── test_files/            # Sample test data
-├── chroma_db/            # Vector database storage
-├── app.py                # Streamlit web interface
-├── config.yaml           # System configuration
-├── generate_performance_report.py  # Performance testing
-├── requirements.txt      # Python dependencies
-└── README.md            # This file
-```
-```
-
-## Performance Metrics
-
-Based on `Pipeline_Performance_Report.pdf`:
+## 📊 Performance Metrics
 
 | Metric | Value | Status |
 |--------|-------|--------|
 | **Retrieval Latency** | 0.030s avg | ✓ PASS (<2s) |
-| **Files Processed** | 13 files | ✓ PASS (>10) |
-| **Cross-Modal Success** | 60%+ | ✓ PASS |
-| **Indexing Time** | 1.18s for 13 files | ✓ PASS |
-| **Error Handling** | Graceful degradation | ✓ PASS |
+| **Cross-Modal Accuracy** | 60%+ | ✓ PASS |
+| **Indexing Speed** | 1.18s (13 files) | ✓ PASS |
+| **Supported Formats** | 12 types | ✓ PASS |
 
-## API Reference
+## 🔧 Extending with NEO
+
+Enhance this RAG system using **NEO**, an AI-powered development assistant:
+
+### Getting Started with NEO
+
+1. **Install the NEO VS Code Extension**
+   
+   [**NEO VS Code Extension**](https://marketplace.visualstudio.com/items?itemName=NeoResearchInc.heyneo)
+
+2. **Use NEO to Extend Functionality**
+   
+   - **Add video support**: Integrate video frame extraction and temporal search
+   - **Multi-language embeddings**: Add multilingual CLIP models for global content
+   - **Hybrid search**: Combine vector similarity with keyword BM25 for better accuracy
+   - **Re-ranking**: Implement cross-encoder re-ranking for top results
+   - **Graph relationships**: Build knowledge graphs from retrieved entities
+   - **LLM integration**: Add GPT-4 for answer synthesis from retrieved chunks
+   - **Fine-tuning**: Create domain-specific embeddings for specialized use cases
+   - **Real-time indexing**: Add webhook-based auto-ingestion for new files
+
+3. **Example NEO Prompts**
+```
+   "Add support for video files with frame extraction and temporal search"
+   
+   "Integrate GPT-4 to generate answers from retrieved chunks"
+   
+   "Implement BM25 hybrid search combining keyword and semantic retrieval"
+   
+   "Add cross-encoder re-ranking to improve top-3 result accuracy"
+   
+   "Create a FastAPI REST API for production deployment"
+   
+   "Build automatic file monitoring to index new uploads in real-time"
+   
+   "Add multilingual support using multilingual-CLIP models"
+   
+   "Implement conversation memory to maintain chat context across queries"
+```
+
+4. **Advanced Use Cases**
+   
+   - **Enterprise Knowledge Base**: Index company docs, presentations, and reports with multi-team access
+   - **Medical Records Search**: HIPAA-compliant retrieval across patient images, lab results, and notes
+   - **E-commerce Product Search**: Visual similarity + text description matching for product catalogs
+   - **Legal Discovery**: Search across case files, exhibits, and depositions with citation tracking
+   - **Research Assistant**: Academic paper search with figure/table extraction and citation networks
+   - **Content Moderation**: Flag inappropriate images/text across user-generated content
+   - **Customer Support**: Auto-suggest solutions from manuals, images, and past tickets
+   - **Financial Analysis**: Retrieve charts, tables, and reports for investment research
+
+5. **Performance Optimization with NEO**
+   
+   - **GPU acceleration**: Add FAISS GPU indexing for 10x faster search
+   - **Quantization**: Implement embedding compression for reduced storage
+   - **Caching**: Add Redis layer for frequently accessed chunks
+   - **Batch processing**: Optimize parallel ingestion for large datasets
+   - **Monitoring**: Build Grafana dashboards for retrieval quality metrics
+
+### Learn More About NEO
+
+Visit [heyneo.so](https://heyneo.so/) to explore additional features.
+
+## 📡 API Reference
 
 ### MultimodalIngestion
-
 ```python
 from src.ingest import MultimodalIngestion
 
-ingestion = MultimodalIngestion(
-    text_chunk_size=512,
-    text_chunk_overlap=50
-)
-
+ingestion = MultimodalIngestion(text_chunk_size=512, text_chunk_overlap=50)
 chunks = ingestion.process_directory("./data")
-
-for chunk in chunks:
-    print(chunk['type'])      # 'text', 'image', or 'table'
-    print(chunk['content'])   # Textual representation
-    print(chunk['metadata'])  # Source, modality, etc.
 ```
 
 ### MultimodalIndexer
-
 ```python
 from src.index import MultimodalIndexer
 
-indexer = MultimodalIndexer(
-    model_name="openai/clip-vit-base-patch32",
-    db_path="./chroma_db"
-)
-
+indexer = MultimodalIndexer(model_name="openai/clip-vit-base-patch32")
 result = indexer.index_chunks(chunks)
-print(f"Indexed: {result['indexed']}, Errors: {result['errors']}")
-
-stats = indexer.get_collection_stats()
 ```
 
 ### MultimodalRetriever
-
 ```python
 from src.retrieve import MultimodalRetriever
 
-retriever = MultimodalRetriever(
-    model_name="openai/clip-vit-base-patch32",
-    db_path="./chroma_db"
-)
-
+retriever = MultimodalRetriever(model_name="openai/clip-vit-base-patch32")
 response = retriever.retrieve("sales revenue", top_k=5)
-
-for result in response['results']:
-    modality = result['modality']
-    score = result['similarity_score']
-    source = result['metadata']['source']
 ```
 
-## Supported File Formats
+## 📂 Supported Formats
 
-| Category | Formats | Processing Method |
-|----------|---------|-------------------|
+| Category | Formats | Processing |
+|----------|---------|------------|
 | **Documents** | TXT, PDF, DOCX | Text extraction + chunking |
-| **Images** | PNG, JPG, JPEG, TIFF, BMP | OCR + visual embedding |
+| **Images** | PNG, JPG, TIFF, BMP | OCR + visual embedding |
 | **Tables** | CSV, XLSX, JSON | Schema + content serialization |
 
-## Technical Details
+## 🐛 Troubleshooting
 
-### Embedding Model
-- **Model**: OpenAI CLIP (ViT-B/32)
-- **Dimension**: 512
-- **Normalization**: L2 normalized vectors
-- **Unified Space**: Same embedding space for all modalities
-
-### Vector Database
-- **Engine**: ChromaDB 1.4.1
-- **Storage**: Persistent SQLite backend
-- **Distance**: Cosine similarity
-- **Indexing**: Automatic HNSW
-
-### Processing Pipeline
-1. **Ingestion**: File type detection → Content extraction → Chunking
-2. **Embedding**: Modality-specific encoding → Normalization → Vector generation
-3. **Indexing**: Batch insertion → Metadata storage → Index optimization
-4. **Retrieval**: Query embedding → Similarity search → Result ranking
-
-## Troubleshooting
-
-### Issue: Tesseract not found
+**Tesseract not found:**
 ```bash
-# Ubuntu/Debian
-sudo apt-get install tesseract-ocr
-
-# macOS
-brew install tesseract
+sudo apt-get install tesseract-ocr  # Ubuntu
+brew install tesseract              # macOS
 ```
 
-### Issue: CUDA out of memory
-Edit `config.yaml`:
+**CUDA out of memory:**
 ```yaml
+# Edit config.yaml
 batch_size: 16  # Reduce from 32
 ```
 
-### Issue: Port 8501 already in use
+**Port in use:**
 ```bash
 ./venv/bin/python -m streamlit run app.py --server.port 8502
 ```
 
-### Issue: Import errors
-```bash
-./venv/bin/python -m pip install -r requirements.txt --force-reinstall
-```
+## 📜 License
 
-## Testing
+MIT License - See LICENSE file
 
-Run comprehensive tests:
-```bash
-./venv/bin/python generate_performance_report.py
-```
-
-Quick smoke test:
-```bash
-./venv/bin/python -c "
-from src.ingest import MultimodalIngestion
-from src.index import MultimodalIndexer
-from src.retrieve import MultimodalRetriever
-
-print('Testing ingestion...')
-ing = MultimodalIngestion()
-chunks = ing.process_directory('./test_files')
-print(f'✓ Extracted {len(chunks)} chunks')
-
-print('Testing indexing...')
-idx = MultimodalIndexer(model_name='openai/clip-vit-base-patch32', db_path='./chroma_db')
-result = idx.index_chunks(chunks[:3])
-print(f'✓ Indexed {result[\"indexed\"]} chunks')
-
-print('Testing retrieval...')
-ret = MultimodalRetriever(model_name='openai/clip-vit-base-patch32', db_path='./chroma_db')
-resp = ret.retrieve('test query', top_k=3)
-print(f'✓ Retrieved {len(resp[\"results\"])} results')
-
-print('All tests passed!')
-"
-```
-
-## License
-
-MIT License - See LICENSE file for details
-
-## Acknowledgments
+## 🙏 Acknowledgments
 
 - CLIP Model: OpenAI
 - Vector Store: ChromaDB
 - UI Framework: Streamlit
 - OCR: Tesseract
-
-## Contact
-
-For issues and questions, please check the documentation or create an issue in the repository.
