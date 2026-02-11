@@ -9,7 +9,7 @@
 
 > A production-ready Retrieval-Augmented Generation system that handles text, images, and tables with unified CLIP-based embeddings for cross-modal search.
 
-**Architected by [NEO](https://heyneo.so/)** - An autonomous AI agent specialized in building multimodal AI systems.
+**Architected by [NEO](https://heyneo.so/)** - An autonomous AI/ML agent 
 
 ---
 
