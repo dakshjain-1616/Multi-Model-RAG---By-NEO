@@ -997,7 +997,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 <div align="center">
 
-**Architected with ❤️ by [NEO](https://heyneo.so/) - Specialized in Multimodal AI**
+**Architected with ❤️ by [NEO](https://heyneo.so/) - Autonomous AI/ML agent **
 
 [⭐ Star this repo](https://github.com/dakshjain-1616/Multi-Model-RAG---By-NEO) • [🐛 Report Bug](https://github.com/dakshjain-1616/Multi-Model-RAG---By-NEO/issues) • [✨ Request Feature](https://github.com/dakshjain-1616/Multi-Model-RAG---By-NEO/issues)
 
